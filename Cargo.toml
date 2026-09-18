@@ -2,6 +2,9 @@
 members = ["programs/jrock_lotto", "programs/jrock_lotto_v2"]
 resolver = "2"
 
+[workspace.metadata.cli]
+solana = "4.0.3"
+
 [profile.release]
 overflow-checks = true
 lto = "fat"
