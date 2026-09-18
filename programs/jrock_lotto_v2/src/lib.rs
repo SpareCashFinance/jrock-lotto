@@ -11,9 +11,23 @@ use anchor_lang::system_program::{transfer, Transfer};
 
 declare_id!("66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg");
 
+#[cfg(not(feature = "no-entrypoint"))]
+use solana_security_txt::security_txt;
+
+#[cfg(not(feature = "no-entrypoint"))]
+security_txt! {
+    name: "Jamie's Pet Rock Kennel Lotto",
+    project_url: "https://petrock.fun/lotto",
+    contacts: "link:https://t.me/Jamiespetrock,link:https://x.com/petrockbtc",
+    policy: "https://petrock.fun/lotto/verify",
+    preferred_languages: "en",
+    source_code: "https://github.com/SpareCashFinance/jrock-lotto",
+    auditors: "None"
+}
+
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const ROUND_SEED: &[u8] = b"round";
-pub const MAX_BUYERS: usize = 64;
+pub const MAX_BUYERS: usize = 256;
 pub const MAX_TICKETS_PER_BUY: u8 = 20;
 pub const WINNER_SHARE_BPS: u64 = 85;
 pub const SHARE_DENOM: u64 = 100;
@@ -293,46 +307,8 @@ pub mod jrock_lotto_v2 {
         Ok(())
     }
 
-    pub fn refund_one(ctx: Context<RefundOne>, buyer_index: u32) -> Result<()> {
-        let clock = Clock::get()?;
-        let ticket_lamports = ctx.accounts.config.ticket_lamports;
-        let round = &mut ctx.accounts.round;
-        require!(
-            round.status == RoundStatus::Closed
-                || round.status == RoundStatus::RandomnessRequested
-                || round.status == RoundStatus::Fulfilled
-                || round.status == RoundStatus::Refunding,
-            LottoError::RefundClosed
-        );
-        require!(round.close_ts > 0, LottoError::TooEarly);
-        require!(clock.unix_timestamp >= round.vrf_timeout_ts, LottoError::TooEarly);
-
-        if round.status != RoundStatus::Refunding {
-            round.status = RoundStatus::Refunding;
-        }
-
-        let idx = buyer_index as usize;
-        require!(idx < round.buyers.len(), LottoError::BadBuyer);
-        require!(round.buyers[idx].refunded == 0, LottoError::AlreadyRefunded);
-        require_keys_eq!(ctx.accounts.buyer.key(), round.buyers[idx].wallet, LottoError::WrongWinner);
-
-        let refund = refund_lamports(ticket_lamports, round.buyers[idx].tickets)?;
-        require!(refund > 0, LottoError::EmptyPot);
-        {
-            let round_info = round.to_account_info();
-            let buyer_info = ctx.accounts.buyer.to_account_info();
-            let rent = Rent::get()?.minimum_balance(round_info.data_len());
-            require!(round_info.lamports().saturating_sub(rent) >= refund, LottoError::EmptyPot);
-            **round_info.try_borrow_mut_lamports()? -= refund;
-            **buyer_info.try_borrow_mut_lamports()? += refund;
-        }
-        round.buyers[idx].refunded = 1;
-
-        if round.buyers.iter().all(|row| row.refunded == 1) {
-            round.status = RoundStatus::Refunded;
-            bump_round(&mut ctx.accounts.config)?;
-        }
-        Ok(())
+    pub fn refund_one(_ctx: Context<RefundOne>, _buyer_index: u32) -> Result<()> {
+        err!(LottoError::RefundsDisabled)
     }
 }
 
@@ -545,6 +521,9 @@ pub struct Buy<'info> {
     pub config: Account<'info, Config>,
     #[account(
         mut,
+        realloc = 8 + Round::INIT_SPACE,
+        realloc::payer = buyer,
+        realloc::zero = false,
         seeds = [ROUND_SEED, config.current_round.to_le_bytes().as_ref()],
         bump = round.bump,
         constraint = round.round_id == config.current_round @ LottoError::WrongRound
@@ -678,7 +657,7 @@ pub struct Round {
     pub vrf_randomness: [u8; 32],
     pub vrf_request: Pubkey,
     pub status: RoundStatus,
-    #[max_len(64)]
+    #[max_len(MAX_BUYERS)]
     pub buyers: Vec<Buyer>,
     pub bump: u8,
 }
@@ -752,6 +731,8 @@ pub enum LottoError {
     BadBuyer,
     #[msg("Signer is not the config authority.")]
     Unauthorized,
+    #[msg("This draw does not refund. If anyone bought, settle always picks one of those wallets.")]
+    RefundsDisabled,
 }
 
 #[cfg(test)]
@@ -805,6 +786,11 @@ mod tests {
     fn buy_size_rejects_zero_and_twenty_one() {
         assert!(!(0u8 >= 1 && 0u8 <= MAX_TICKETS_PER_BUY));
         assert!(21u8 > MAX_TICKETS_PER_BUY);
+    }
+
+    #[test]
+    fn book_holds_two_hundred_fifty_six_buys() {
+        assert_eq!(MAX_BUYERS, 256);
     }
 
     #[test]

@@ -10,7 +10,7 @@ Do not reuse v1 PDAs. Product rules stay: 0.05 SOL, 1–20 slips, 1% kennel fee 
 
 `Open → Closed → RandomnessRequested → Fulfilled → Settled → Claimed`
 
-Plus `Void` (close with zero tickets) and `Refunding` / `Refunded` (VRF timeout).
+Plus `Void` (close with zero tickets). `Refunding` / `Refunded` stay in the account layout so existing PDAs decode, but `refund_one` now returns `RefundsDisabled`. If anyone bought, settle always picks one of those wallets.
 
 ## Randomness
 
@@ -24,9 +24,11 @@ After `close_sales` with tickets:
 6. `winner_index` uses rejection sampling on that 256-bit value into `0..n-1` (not raw `% n`).
 7. Winner wallet is the buyer whose `[from_index, from_index + tickets)` contains that index. Never an instruction argument.
 
-## Timeout refund
+## No timeout refund
 
-If VRF has not been consumed into a winner by `close_ts + vrf_timeout_secs`, anyone may `refund_one` for each unrefunded buyer. Payout is `tickets * price * 99/100` (the 1% kennel fee stays paid). After refunds start, settle is rejected. When every buyer is refunded the round is `Refunded` and `open_round` may roll leftover lamports.
+`refund_one` is kept so the instruction index and account layout stay compatible. It always errors. If ORAO is late, wait and crank `fulfill_randomness` / `settle`. Do not tell buyers they can get a refund.
+
+The book holds 256 buy rows (`MAX_BUYERS`). Round 0 was created at 64 rows; the next `buy` reallocs that account to the new `INIT_SPACE`.
 
 ## Independent check
 
