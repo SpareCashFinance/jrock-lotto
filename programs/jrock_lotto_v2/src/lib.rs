@@ -70,6 +70,24 @@ pub mod jrock_lotto_v2 {
             LottoError::Unauthorized
         );
         ctx.accounts.config.round_secs = round_secs;
+
+        let clock = Clock::get()?;
+        let round = &mut ctx.accounts.round;
+        require!(round.round_id == ctx.accounts.config.current_round, LottoError::WrongRound);
+        if round.status == RoundStatus::Open && round.ticket_count == 0 {
+            let from_start = round
+                .start_ts
+                .checked_add(round_secs)
+                .ok_or(LottoError::Overflow)?;
+            round.end_ts = if from_start > clock.unix_timestamp {
+                from_start
+            } else {
+                clock
+                    .unix_timestamp
+                    .checked_add(round_secs)
+                    .ok_or(LottoError::Overflow)?
+            };
+        }
         Ok(())
     }
 
@@ -477,6 +495,13 @@ pub struct SetRoundSecs<'info> {
     pub authority: Signer<'info>,
     #[account(mut, seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Account<'info, Config>,
+    #[account(
+        mut,
+        seeds = [ROUND_SEED, config.current_round.to_le_bytes().as_ref()],
+        bump = round.bump,
+        constraint = round.round_id == config.current_round @ LottoError::WrongRound
+    )]
+    pub round: Account<'info, Round>,
 }
 
 #[derive(Accounts)]

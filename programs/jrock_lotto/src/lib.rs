@@ -1,5 +1,5 @@
-//! Frozen mainnet v1 (SlotHashes). Do not upgrade `FvQfcJYAcRFEDeq8rS19MNXTZfeiCxcSN5nmfA6RdWuC`
-//! while round 0 `3Q5u97fxVbwxPBcqg34CgqtfPdQ1RTyvnwQHPrg7CUe1` holds player SOL.
+//! Live mainnet v1 (SlotHashes). Round 0 is claimed. Round 1 may be shortened to 48 hours
+//! only while it is Open with zero slips. Do not replace the ELF once this round holds ticket SOL.
 //! Successor is `jrock_lotto_v2`. See `docs/lotto-v1-snapshot.md`.
 
 use anchor_lang::prelude::*;
@@ -65,6 +65,24 @@ pub mod jrock_lotto {
             LottoError::Unauthorized
         );
         ctx.accounts.config.round_secs = round_secs;
+
+        let clock = Clock::get()?;
+        let round = &mut ctx.accounts.round;
+        require!(round.round_id == ctx.accounts.config.current_round, LottoError::WrongRound);
+        if round.status == RoundStatus::Open && round.ticket_count == 0 {
+            let from_start = round
+                .start_ts
+                .checked_add(round_secs)
+                .ok_or(LottoError::Overflow)?;
+            round.end_ts = if from_start > clock.unix_timestamp {
+                from_start
+            } else {
+                clock
+                    .unix_timestamp
+                    .checked_add(round_secs)
+                    .ok_or(LottoError::Overflow)?
+            };
+        }
         Ok(())
     }
 
@@ -315,6 +333,13 @@ pub struct SetRoundSecs<'info> {
     pub authority: Signer<'info>,
     #[account(mut, seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Account<'info, Config>,
+    #[account(
+        mut,
+        seeds = [ROUND_SEED, config.current_round.to_le_bytes().as_ref()],
+        bump = round.bump,
+        constraint = round.round_id == config.current_round @ LottoError::WrongRound
+    )]
+    pub round: Account<'info, Round>,
 }
 
 #[derive(Accounts)]
@@ -553,5 +578,20 @@ mod tests {
             .find(|row| winner_index >= row.from_index && winner_index < row.from_index + row.tickets)
             .unwrap();
         assert_eq!(winner.wallet, buyers[1].wallet);
+    }
+
+    #[test]
+    fn empty_open_round_shortens_from_start_when_48h_is_still_ahead() {
+        let start = 1_000_000i64;
+        let round_secs = 172_800i64;
+        let now = start + 3_600;
+        let from_start = start.checked_add(round_secs).unwrap();
+        let new_end = if from_start > now {
+            from_start
+        } else {
+            now.checked_add(round_secs).unwrap()
+        };
+        assert_eq!(new_end, start + round_secs);
+        assert!(new_end > now);
     }
 }
