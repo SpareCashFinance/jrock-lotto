@@ -1,6 +1,6 @@
 [package]
 name = "jrock_lotto_v2"
-version = "0.2.2"
+version = "0.2.3"
 description = "Jamie's Pet Rock kennel lotto v2 (ORAO VRF)"
 edition = "2021"
 

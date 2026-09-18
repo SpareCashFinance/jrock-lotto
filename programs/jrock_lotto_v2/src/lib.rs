@@ -193,6 +193,10 @@ pub mod jrock_lotto_v2 {
                 fee,
             )?;
         }
+        compact_round(
+            &ctx.accounts.round.to_account_info(),
+            ctx.accounts.round.buyers.len(),
+        )?;
         Ok(())
     }
 
@@ -301,7 +305,9 @@ pub mod jrock_lotto_v2 {
         require_keys_eq!(ctx.accounts.winner.key(), ctx.accounts.round.winner, LottoError::WrongWinner);
 
         {
+            let rows = ctx.accounts.round.buyers.len();
             let round_info = ctx.accounts.round.to_account_info();
+            compact_round(&round_info, rows)?;
             let winner_info = ctx.accounts.winner.to_account_info();
             let rent = Rent::get()?.minimum_balance(round_info.data_len());
             let claimable = round_info.lamports().saturating_sub(rent);
@@ -321,6 +327,14 @@ pub mod jrock_lotto_v2 {
 
     pub fn refund_one(_ctx: Context<RefundOne>, _buyer_index: u32) -> Result<()> {
         err!(LottoError::RefundsDisabled)
+    }
+
+    /// Shrink the current book to used rows so leftover realloc rent stays in the pot.
+    pub fn compact_book(ctx: Context<CompactBook>) -> Result<()> {
+        compact_round(
+            &ctx.accounts.round.to_account_info(),
+            ctx.accounts.round.buyers.len(),
+        )
     }
 }
 
@@ -441,6 +455,15 @@ fn orao_fulfilled_randomness(account: &AccountInfo, expected_seed: &[u8; 32]) ->
     let mut out = [0u8; 32];
     out.copy_from_slice(&data[rand_off..rand_off + 32]);
     Ok(out)
+}
+
+fn compact_round(info: &AccountInfo, rows: usize) -> Result<()> {
+    let need = round_space(rows);
+    require!(info.data_len() >= need, LottoError::Overflow);
+    if info.data_len() > need {
+        info.realloc(need, false)?;
+    }
+    Ok(())
 }
 
 fn excess_lamports(account: &AccountInfo) -> Result<u64> {
@@ -643,6 +666,19 @@ pub struct RefundOne<'info> {
     pub buyer: SystemAccount<'info>,
 }
 
+#[derive(Accounts)]
+pub struct CompactBook<'info> {
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
+    #[account(
+        mut,
+        seeds = [ROUND_SEED, config.current_round.to_le_bytes().as_ref()],
+        bump = round.bump,
+        constraint = round.round_id == config.current_round @ LottoError::WrongRound
+    )]
+    pub round: Account<'info, Round>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct Config {
@@ -807,6 +843,8 @@ mod tests {
         assert_eq!(round_space(256), 10_686);
         assert_eq!(buy_realloc_space(6, 10_686), 10_686);
         assert_eq!(buy_realloc_space(256, 10_686), 10_727);
+        assert_eq!(round_space(7), 477);
+        assert_eq!(buy_realloc_space(7, 477), 518);
     }
 
     #[test]

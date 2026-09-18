@@ -28,7 +28,7 @@ After `close_sales` with tickets:
 
 `refund_one` is kept so the instruction index and account layout stay compatible. It always errors. If ORAO is late, wait and crank `fulfill_randomness` / `settle`. Do not tell buyers they can get a refund.
 
-The book holds 10,000 buy rows (`MAX_BUYERS`). New rounds start at 64 rows and grow by one row per buy so rent is paid as people file, not all at once.
+The book holds 10,000 buy rows (`MAX_BUYERS`). New rounds start at 64 rows and grow by one row per buy so rent is paid as people file, not all at once. `compact_book`, `buy`, and `claim` shrink unused reserved rows so leftover realloc rent stays in the pot instead of being stranded as rent.
 
 ## Independent check
 
