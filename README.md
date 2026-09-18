@@ -23,6 +23,8 @@ This branch is the **48-hour ELF**. If the live round is Open with zero slips, `
 
 After this ELF is live, verify against this commit instead of `lotto-v1-mainnet`.
 
+Pending (not live): branch [`v1-48h`](https://github.com/SpareCashFinance/jrock-lotto/tree/v1-48h) adds `set_round_secs` so later rocks can be 48 hours. Do not verify the live program against that branch. The current rock's `end_ts` stays at the 72-hour clock written on-chain.
+
 ```
 solana-verify verify-from-repo \
   https://github.com/SpareCashFinance/jrock-lotto \
