@@ -21,6 +21,8 @@ A matching source hash proves the deployed ELF came from this tree. It does **no
 
 Do **not** upgrade this program while a round PDA holds player SOL.
 
+Pending (not live): branch [`v1-48h`](https://github.com/SpareCashFinance/jrock-lotto/tree/v1-48h) adds `set_round_secs` so later rocks can be 48 hours. Do not verify the live program against that branch. The current rock's `end_ts` stays at the 72-hour clock written on-chain.
+
 ```
 solana-verify verify-from-repo \
   https://github.com/SpareCashFinance/jrock-lotto \
