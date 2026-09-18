@@ -10,7 +10,7 @@ Do not reuse v1 PDAs. Product rules stay: 0.05 SOL, 1–20 slips, 1% kennel fee 
 
 `Open → Closed → RandomnessRequested → Fulfilled → Settled → Claimed`
 
-Plus `Void` (close with zero tickets). `Refunding` / `Refunded` stay in the account layout so existing PDAs decode, but `refund_one` now returns `RefundsDisabled`. If anyone bought, settle always picks one of those wallets.
+Plus `Void` (close with zero tickets). `Refunding` / `Refunded` stay in the account layout so existing PDAs decode, but `refund_one` now returns `RefundsDisabled`. If anyone bought, settle always picks one of those wallets. The book holds 10,000 buy rows and grows with each buy.
 
 ## Randomness
 
@@ -28,7 +28,7 @@ After `close_sales` with tickets:
 
 `refund_one` is kept so the instruction index and account layout stay compatible. It always errors. If ORAO is late, wait and crank `fulfill_randomness` / `settle`. Do not tell buyers they can get a refund.
 
-The book holds 256 buy rows (`MAX_BUYERS`). Round 0 was created at 64 rows; the next `buy` reallocs that account to the new `INIT_SPACE`.
+The book holds 10,000 buy rows (`MAX_BUYERS`). New rounds start at 64 rows and grow by one row per buy so rent is paid as people file, not all at once.
 
 ## Independent check
 

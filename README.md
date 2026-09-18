@@ -18,7 +18,7 @@ A matching source hash proves the deployed ELF came from this tree. It does **no
 | Ticket | 0.05 SOL (1% kennel fee inside the price) |
 | Split | Winner 85% after rent · 15% seeds the next round |
 | Randomness | One bound ORAO Classic `request_v2`. Rejection sampling. If anyone bought, settle always picks one of those wallets. `refund_one` is disabled. |
-| Book | 256 buy rows. Live round accounts realloc on the next buy. |
+| Book | 10,000 buy rows (1–20 slips each). The round account grows as people buy so we do not lock a huge rent bill up front. |
 | Round length | 48 hours (`172800` seconds) |
 
 ```

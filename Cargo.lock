@@ -755,7 +755,7 @@ dependencies = [
 
 [[package]]
 name = "jrock_lotto_v2"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anchor-lang",
  "solana-security-txt",

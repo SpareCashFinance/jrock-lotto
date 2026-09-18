@@ -27,8 +27,20 @@ security_txt! {
 
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const ROUND_SEED: &[u8] = b"round";
-pub const MAX_BUYERS: usize = 256;
+pub const MAX_BUYERS: usize = 10_000;
+pub const INITIAL_BUYERS: usize = 64;
+pub const BUYER_SPACE: usize = 41;
+/// Discriminator + fixed Round fields + vec length + bump.
+pub const ROUND_HEADER: usize = 190;
 pub const MAX_TICKETS_PER_BUY: u8 = 20;
+
+pub const fn round_space(buyer_rows: usize) -> usize {
+    ROUND_HEADER + buyer_rows * BUYER_SPACE
+}
+
+pub fn buy_realloc_space(current_rows: usize, data_len: usize) -> usize {
+    round_space(current_rows.saturating_add(1)).max(data_len)
+}
 pub const WINNER_SHARE_BPS: u64 = 85;
 pub const SHARE_DENOM: u64 = 100;
 pub const SLIP_FEE_BPS: u64 = 1;
@@ -461,7 +473,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + Round::INIT_SPACE,
+        space = round_space(INITIAL_BUYERS),
         seeds = [ROUND_SEED, &[0u8; 8]],
         bump
     )]
@@ -505,7 +517,7 @@ pub struct OpenRound<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + Round::INIT_SPACE,
+        space = round_space(INITIAL_BUYERS),
         seeds = [ROUND_SEED, config.current_round.to_le_bytes().as_ref()],
         bump
     )]
@@ -521,7 +533,7 @@ pub struct Buy<'info> {
     pub config: Account<'info, Config>,
     #[account(
         mut,
-        realloc = 8 + Round::INIT_SPACE,
+        realloc = buy_realloc_space(round.buyers.len(), round.to_account_info().data_len()),
         realloc::payer = buyer,
         realloc::zero = false,
         seeds = [ROUND_SEED, config.current_round.to_le_bytes().as_ref()],
@@ -789,8 +801,12 @@ mod tests {
     }
 
     #[test]
-    fn book_holds_two_hundred_fifty_six_buys() {
-        assert_eq!(MAX_BUYERS, 256);
+    fn book_grows_to_ten_thousand_buys() {
+        assert_eq!(MAX_BUYERS, 10_000);
+        assert_eq!(round_space(0), 190);
+        assert_eq!(round_space(256), 10_686);
+        assert_eq!(buy_realloc_space(6, 10_686), 10_686);
+        assert_eq!(buy_realloc_space(256, 10_686), 10_727);
     }
 
     #[test]
