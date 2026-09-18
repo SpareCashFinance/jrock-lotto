@@ -19,7 +19,9 @@ A matching source hash proves the deployed ELF came from this tree. It does **no
 | Randomness | SlotHashes after `close_sales`. Interim. Not a VRF. |
 | Round length at init | 72 hours (`259200` seconds), stored on config |
 
-Do **not** upgrade this program while a round PDA holds player SOL.
+This branch is the **48-hour ELF**. If the live round is Open with zero slips, `set_round_secs(172800)` rewrites that rock's `end_ts` to start + 48 hours and sets later rocks to 48 hours. Leftover seed stays. Do not deploy this over a round that already has tickets.
+
+After this ELF is live, verify against this commit instead of `lotto-v1-mainnet`.
 
 Pending (not live): branch [`v1-48h`](https://github.com/SpareCashFinance/jrock-lotto/tree/v1-48h) adds `set_round_secs` so later rocks can be 48 hours. Do not verify the live program against that branch. The current rock's `end_ts` stays at the 72-hour clock written on-chain.
 

@@ -62,6 +62,35 @@ pub mod jrock_lotto_v2 {
         Ok(())
     }
 
+    pub fn set_round_secs(ctx: Context<SetRoundSecs>, round_secs: i64) -> Result<()> {
+        require!(round_secs > 60, LottoError::BadConfig);
+        require_keys_eq!(
+            ctx.accounts.authority.key(),
+            ctx.accounts.config.authority,
+            LottoError::Unauthorized
+        );
+        ctx.accounts.config.round_secs = round_secs;
+
+        let clock = Clock::get()?;
+        let round = &mut ctx.accounts.round;
+        require!(round.round_id == ctx.accounts.config.current_round, LottoError::WrongRound);
+        if round.status == RoundStatus::Open && round.ticket_count == 0 {
+            let from_start = round
+                .start_ts
+                .checked_add(round_secs)
+                .ok_or(LottoError::Overflow)?;
+            round.end_ts = if from_start > clock.unix_timestamp {
+                from_start
+            } else {
+                clock
+                    .unix_timestamp
+                    .checked_add(round_secs)
+                    .ok_or(LottoError::Overflow)?
+            };
+        }
+        Ok(())
+    }
+
     pub fn open_round(ctx: Context<OpenRound>) -> Result<()> {
         let clock = Clock::get()?;
         let config = &ctx.accounts.config;
@@ -462,6 +491,20 @@ pub struct Initialize<'info> {
 }
 
 #[derive(Accounts)]
+pub struct SetRoundSecs<'info> {
+    pub authority: Signer<'info>,
+    #[account(mut, seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
+    #[account(
+        mut,
+        seeds = [ROUND_SEED, config.current_round.to_le_bytes().as_ref()],
+        bump = round.bump,
+        constraint = round.round_id == config.current_round @ LottoError::WrongRound
+    )]
+    pub round: Account<'info, Round>,
+}
+
+#[derive(Accounts)]
 pub struct OpenRound<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -704,6 +747,8 @@ pub enum LottoError {
     AlreadyRefunded,
     #[msg("Bad buyer index.")]
     BadBuyer,
+    #[msg("Signer is not the config authority.")]
+    Unauthorized,
 }
 
 #[cfg(test)]
