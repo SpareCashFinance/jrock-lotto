@@ -1,0 +1,25 @@
+[toolchain]
+anchor_version = "0.31.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+jrock_lotto = "FvQfcJYAcRFEDeq8rS19MNXTZfeiCxcSN5nmfA6RdWuC"
+jrock_lotto_v2 = "66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg"
+
+[programs.devnet]
+jrock_lotto = "FvQfcJYAcRFEDeq8rS19MNXTZfeiCxcSN5nmfA6RdWuC"
+jrock_lotto_v2 = "66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg"
+
+[programs.mainnet]
+jrock_lotto = "FvQfcJYAcRFEDeq8rS19MNXTZfeiCxcSN5nmfA6RdWuC"
+jrock_lotto_v2 = "66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg"
+
+[provider]
+cluster = "mainnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "node tests/jrock_lotto.ts"
