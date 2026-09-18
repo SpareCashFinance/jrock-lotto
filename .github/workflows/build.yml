@@ -11,16 +11,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: dtolnay/rust-toolchain@1.86.0
+        with:
+          toolchain: 1.86.0
+
       - name: Install Solana
         run: |
           sh -c "$(curl -sSfL https://release.anza.xyz/v4.2.2/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
 
       - name: Build v1 SBF
-        run: cargo-build-sbf --manifest-path programs/jrock_lotto/Cargo.toml
+        run: cargo-build-sbf --manifest-path programs/jrock_lotto/Cargo.toml -- --locked
 
       - name: Build v2 SBF
-        run: cargo-build-sbf --manifest-path programs/jrock_lotto_v2/Cargo.toml
+        run: cargo-build-sbf --manifest-path programs/jrock_lotto_v2/Cargo.toml -- --locked
 
       - uses: actions/upload-artifact@v4
         with:
