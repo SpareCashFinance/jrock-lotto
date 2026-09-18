@@ -1,10 +1,10 @@
-name: Verify v2 on OtterSec
+name: Verifiable v2 ELF
 
 on:
   workflow_dispatch:
 
 jobs:
-  verify:
+  build:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -16,31 +16,11 @@ jobs:
           sudo mv solana-verify /usr/local/bin/solana-verify
           solana-verify --version
 
-      - name: Queue OtterSec rebuild
-        run: |
-          curl -fsS -X POST https://verify.osec.io/verify \
-            -H "Content-Type: application/json" \
-            -d '{"repository":"https://github.com/SpareCashFinance/jrock-lotto","program_id":"66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg","commit_hash":"5513a4854dbbe80f4cea4ecee3d04b40077ca22f","lib_name":"jrock_lotto_v2"}'
-
-      - name: Export verification PDA transaction
-        run: |
-          solana-verify export-pda-tx -um \
-            --program-id 66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg \
-            --uploader 62C41rN2uUrsZoRkZyTqxD8GJYpa6KtERAtehfNmiXwq \
-            --library-name jrock_lotto_v2 \
-            --commit-hash 5513a4854dbbe80f4cea4ecee3d04b40077ca22f \
-            https://github.com/SpareCashFinance/jrock-lotto \
-            | tee pda-tx.txt
-
-      - name: Submit remote job
-        run: |
-          solana-verify remote submit-job \
-            --program-id 66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg \
-            --uploader 62C41rN2uUrsZoRkZyTqxD8GJYpa6KtERAtehfNmiXwq \
-            || true
+      - name: Docker verifiable build
+        run: solana-verify build --library-name jrock_lotto_v2
 
       - uses: actions/upload-artifact@v4
         with:
-          name: verify-pda-tx
-          path: pda-tx.txt
-          if-no-files-found: warn
+          name: jrock_lotto_v2_verified
+          path: target/deploy/jrock_lotto_v2.so
+          if-no-files-found: error
