@@ -439,6 +439,9 @@ fn request_orao_v2<'info>(
     Ok(())
 }
 
+/// ORAO Classic `RandomnessV2` fulfilled layout:
+/// 8-byte account disc, 1-byte RequestAccount::Fulfilled, 32-byte client, 32-byte seed, 64-byte randomness.
+/// We store the first 32 bytes for rejection sampling.
 fn orao_fulfilled_randomness(account: &AccountInfo, expected_seed: &[u8; 32]) -> Result<[u8; 32]> {
     require_keys_eq!(*account.owner, ORAO_VRF, LottoError::BadVrf);
     let data = account.try_borrow_data()?;
@@ -812,5 +815,17 @@ mod tests {
         assert_ne!(RoundStatus::Fulfilled, RoundStatus::Settled);
         assert_ne!(RoundStatus::Settled, RoundStatus::Claimed);
         assert_ne!(RoundStatus::Refunding, RoundStatus::Settled);
+    }
+
+    #[test]
+    fn orao_v2_fulfilled_layout_exposes_seed_then_first_32_random_bytes() {
+        let mut data = vec![0u8; 8 + 1 + 32 + 32 + 64];
+        data[8] = 1;
+        let seed = [7u8; 32];
+        let randomness = [9u8; 64];
+        data[9 + 32..9 + 64].copy_from_slice(&seed);
+        data[9 + 64..].copy_from_slice(&randomness);
+        assert_eq!(&data[8 + 1 + 32..8 + 1 + 64], &seed);
+        assert_eq!(&data[8 + 1 + 64..8 + 1 + 96], &randomness[..32]);
     }
 }

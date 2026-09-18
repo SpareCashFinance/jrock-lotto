@@ -2,49 +2,43 @@
 
 On-chain kennel lotto for `$JROCK` / [petrock.fun](https://petrock.fun). This repo is the **program root** for `solana-verify`. The site lives at [SpareCashFinance/jrock](https://github.com/SpareCashFinance/jrock).
 
-A matching source hash proves the deployed ELF came from this tree. It does **not** make SlotHashes a VRF, and it does not make the live draw 100% fair.
+A matching source hash proves the deployed ELF came from this tree. It does **not** revoke upgrade authority.
 
-## Live v1 (SlotHashes)
+## Live v2 (ORAO VRF Classic)
 
 | | |
 | --- | --- |
-| Program | `FvQfcJYAcRFEDeq8rS19MNXTZfeiCxcSN5nmfA6RdWuC` |
-| Program-data | `BZ2RWk6QZFspNKCHiESE7uYzfeCXMjpSvBJYgas26oWi` |
+| Program | `66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg` |
+| Program-data | `4MDqKt9HiM6oHCCbDSsadXuzDXteuhsJh3QJVniztqoA` |
 | Upgrade authority | `62C41rN2uUrsZoRkZyTqxD8GJYpa6KtERAtehfNmiXwq` |
-| Config | `p9XrAnsutdWKWnBxiCb57fPuuoH2mvdq32nBHKhwh7K` |
-| Library name | `jrock_lotto` |
-| Frozen tag | `lotto-v1-mainnet` |
+| Config | `FBFL6W8ARdkhNM1WFhEfKHqw3HohacK1qhy9jhXQPLwv` |
+| Round 0 | `6R2TdLtWQEqgUVe2yLnhf1GKX651JHja1yUfwEurL8st` |
+| Library name | `jrock_lotto_v2` |
+| Tag | `lotto-v2-mainnet` |
 | Ticket | 0.05 SOL (1% kennel fee inside the price) |
 | Split | Winner 85% after rent · 15% seeds the next round |
-| Randomness | SlotHashes after `close_sales`. Interim. Not a VRF. |
-| Round length at init | 72 hours (`259200` seconds), stored on config |
-
-This branch is the **48-hour ELF**. If the live round is Open with zero slips, `set_round_secs(172800)` rewrites that rock's `end_ts` to start + 48 hours and sets later rocks to 48 hours. Leftover seed stays. Do not deploy this over a round that already has tickets.
-
-After this ELF is live, verify against this commit instead of `lotto-v1-mainnet`.
-
-Pending (not live): branch [`v1-48h`](https://github.com/SpareCashFinance/jrock-lotto/tree/v1-48h) adds `set_round_secs` so later rocks can be 48 hours. Do not verify the live program against that branch. The current rock's `end_ts` stays at the 72-hour clock written on-chain.
+| Randomness | One bound ORAO Classic `request_v2`. Rejection sampling. 6h timeout refunds 99%. |
+| Round length | 48 hours (`172800` seconds) |
 
 ```
 solana-verify verify-from-repo \
   https://github.com/SpareCashFinance/jrock-lotto \
-  --program-id FvQfcJYAcRFEDeq8rS19MNXTZfeiCxcSN5nmfA6RdWuC \
-  --library-name jrock_lotto \
-  --commit-hash lotto-v1-mainnet
+  --program-id 66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg \
+  --library-name jrock_lotto_v2 \
+  --commit-hash lotto-v2-mainnet
 ```
 
-Then confirm the verified badge on Explorer and Solscan. Independent draw check: https://petrock.fun/lotto/verify
+Independent draw check: https://petrock.fun/lotto/verify
 
-## v2 successor (not production)
+## Previous v1 (SlotHashes)
 
 | | |
 | --- | --- |
-| Program id (undeployed) | `66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg` |
-| Library name | `jrock_lotto_v2` |
-| Randomness | ORAO VRF Classic |
-| Default round length | 48 hours (`172800` seconds) at initialize |
+| Program | `FvQfcJYAcRFEDeq8rS19MNXTZfeiCxcSN5nmfA6RdWuC` |
+| Tag | `lotto-v1-48h` |
+| Randomness | SlotHashes after `close_sales`. Interim. Not a VRF. |
 
-Do not point production at v2 until it is initialized on mainnet after the live v1 round is claimed or refunded.
+Do not upgrade v1 while a funded round holds ticket SOL.
 
 ## Build
 

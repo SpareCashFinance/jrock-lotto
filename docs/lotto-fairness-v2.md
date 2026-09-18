@@ -2,7 +2,7 @@
 
 Successor program `jrock_lotto_v2` id `66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg`.
 
-This is **not live on production** until `NEXT_PUBLIC_LOTTO_PROGRAM` is flipped after round 0 on v1 is claimed or refunded. Live desk copy stays on `docs/lotto-fairness.md` (SlotHashes v1).
+This is **live on production** at `66FyiUTkw4JMYMi3yErfa7UBqrHm9GZha1meAxcgbjDg`. v1 SlotHashes remains at `FvQfcJYAcRFEDeq8rS19MNXTZfeiCxcSN5nmfA6RdWuC` as history.
 
 Do not reuse v1 PDAs. Product rules stay: 0.05 SOL, 1–20 slips, 1% kennel fee inside the price, 85/15, tickets `0..n-1`, permissionless crank.
 
