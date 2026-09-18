@@ -7,6 +7,7 @@ This document is a specification, not an audit certificate. A matching source ha
 ## Product rules
 
 - Ticket price: 50_000_000 lamports (0.05 SOL), paid in full.
+- Round length: live config is 72 hours (`259200`). Later rocks are meant to be 48 hours (`172800`) via `set_round_secs` after a safe upgrade. The current rock's `end_ts` is already written.
 - Buy size: 1, 2, 5, 10, or up to 20 tickets per instruction.
 - Kennel fee: 1% of that gross, sent to `qbjbLafSNGq27fYFiF1RKhb9BREk1zFWWS8H6Drj8co`.
 - 99% of the gross is transferred into the current round PDA.
@@ -41,6 +42,7 @@ Live freeze: `docs/lotto-v1-snapshot.md`. Successor spec: `docs/lotto-fairness-v
 ## Independent check
 
 - Site: https://petrock.fun/lotto/verify
+- Program source: https://github.com/SpareCashFinance/jrock-lotto (`lotto-v1-mainnet`)
 - CLI: `node scripts/verify-lotto.mjs [roundId|roundPda]`
 - Audit findings: `docs/lotto-audit.md` (launch decision: FAIL for a trustless production lottery)
 
